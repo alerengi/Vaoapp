@@ -55,8 +55,14 @@ export interface Restaurante {
   lng: number | null;
   tipo_cocina: string | null;
   rango_precio: 1 | 2 | 3 | 4 | null;
+  photo_author: string | null; // Atribución requerida por Google Places
   fecha_sync: string;
-  // photo_reference se omite: es un secreto de servidor, no se expone al cliente
+  // photo_reference se omite de Restaurante para no exponerlo al cliente
+}
+
+// Representación completa de la fila en Postgres (solo para servidor y scripts)
+export interface RestauranteDB extends Restaurante {
+  photo_reference: string | null;
 }
 
 // ---------------------------------------------------------------------------
