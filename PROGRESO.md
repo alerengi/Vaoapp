@@ -2,7 +2,7 @@
 
 ## 1. Fase y tarea actuales
 * **Fase:** Fase 2 (Núcleo) en curso
-* **Tarea actual:** Tarea 2.2 finalizada · Lista para Tarea 2.3
+* **Tarea actual:** Tarea 2.4 finalizada · Lista para Tarea 2.5
 * **Fecha de actualización:** 2026-10-21
 
 ---
@@ -116,8 +116,13 @@
   * Funciones SQL puras en Postgres (`calcular_puntaje_vao`, `calcular_peso_recomendacion`), recálculo en bloque por categoría y distrito con `SECURITY DEFINER`, triggers tolerantes a borrado en cascada y espejo TypeScript idéntico en `lib/puntaje-vao.ts`.
 * [x] **Tarea 2.3 · Recomendar un plato con foto (HU-02):**
   * Formulario mobile-first (<60s) en `/recomendar`, compresión Canvas que elimina EXIF/GPS (<3 MB), sin upsert (verificación previa y update selectivo), manejo concurrente de platos duplicados, rollback de Storage y 104 pruebas en verde.
-* [ ] **Tarea 2.4 · Validar recomendación con "¡Confirmo!" (HU-03):**
-  * Validación optimista reversible, bloqueo de auto-validación y recálculo automático del Puntaje Vao.
+* [x] **Tarea 2.4 · Validar recomendación con "¡Confirmo!" (HU-03):**
+  * Server Action `toggleConfirmar` (`app/actions/validar.ts`): toggle DELETE→INSERT en `validaciones`, rate limit de 30/min por `confirmar:<user_id>` (no por IP), bloqueo de auto-validación en servidor, 23505 tratado como idempotente.
+  * Componente `BotonConfirmar` (`components/BotonConfirmar.tsx`): `useOptimistic` + `useTransition` (patrón Next.js 16), área táctil ≥ 44 px, `aria-pressed` sincronizado, botón deshabilitado con tooltip para recomendaciones propias, flujo de login OAuth para sin-sesión.
+  * Sección `RecomendacionesRecientes` (`components/RecomendacionesRecientes.tsx`): Server Component, últimas 10 recomendaciones visibles con joins a `platos`, `restaurantes` y `usuarios`, contadores y `yaConfirme` calculados en el servidor en una sola query batch.
+  * Integración en `app/page.tsx` con su propio `<Suspense>` + skeleton animado.
+  * **19 nuevas pruebas automatizadas** (`tests/validar.test.ts`): PARAMETRO_INVALIDO, NO_AUTENTICADO, LIMITE_VALIDACIONES, NOT_FOUND (inexistente y oculta), AUTO_VALIDACION, idempotencia 23505, clave de rate limit, firma de un solo argumento y lógica de estado optimista.
+  * **Total acumulado: 123 pruebas automatizadas pasando**, 0 vulnerabilidades y build Next.js 16 en verde.
 * [ ] **Tarea 2.5 · Búsqueda por plato, restaurante o cocina (HU-01):**
   * Barra de búsqueda reactiva (tolerante a tildes y sinónimos) con ordenamiento bayesiano por Puntaje Vao.
 
@@ -191,5 +196,7 @@
 ---
 
 ## 6. Siguiente paso
-* Probar el formulario de recomendación de punta a punta (`/recomendar`) y verificar los datos en Supabase.
-* Proceder con el Plan First de la **Tarea 2.4**: Validar recomendación con "¡Confirmo!" (HU-03).
+* Proceder con el Plan First de la **Tarea 2.5**: Búsqueda por plato, restaurante o cocina (HU-01).
+  * Barra de búsqueda reactiva con tolerancia a tildes, sinónimos y ordenamiento bayesiano por Puntaje Vao.
+  * Además: las tarjetas de restaurantes mostrarán el Puntaje Vao y sus platos más validados (acordado al cerrar Tarea 2.3).
+  * El valor de reserva `m = 3.5` se usará hasta que la categoría tenga al menos 10 recomendaciones visibles en el distrito.

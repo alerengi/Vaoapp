@@ -5,6 +5,10 @@ import { AuthButton } from '@/components/AuthButton'
 import { AuthErrorBanner } from '@/components/AuthErrorBanner'
 import { RestaurantExplorer } from '@/components/RestaurantExplorer'
 import { RestaurantListSkeleton } from '@/components/RestaurantListSkeleton'
+import {
+  RecomendacionesRecientes,
+  RecomendacionesRecientesSkeleton,
+} from '@/components/RecomendacionesRecientes'
 import type { RestauranteDB } from '@/lib/types'
 
 async function RestaurantFeed() {
@@ -83,10 +87,17 @@ export default function Home() {
         </section>
 
         {/* Explorador de Restaurantes en Suspense para Streaming con Partial Prerendering de Next.js 16 */}
-        <main className="w-full py-4">
+        <main className="w-full py-4 flex flex-col gap-2">
           <Suspense fallback={<RestaurantListSkeleton />}>
             <RestaurantFeed />
           </Suspense>
+
+          {/* Sección social: últimas recomendaciones con botón ¡Confirmo! (HU-03) */}
+          <div className="w-full border-t border-neutral-900/60 pt-4">
+            <Suspense fallback={<RecomendacionesRecientesSkeleton />}>
+              <RecomendacionesRecientes />
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>
