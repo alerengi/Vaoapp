@@ -86,8 +86,8 @@ export type PlatoNuevo = Pick<Plato, 'restaurante_id' | 'categoria_id' | 'nombre
 
 // ---------------------------------------------------------------------------
 // Tabla: recomendaciones
-// foto_path: ruta relativa en el bucket, formato: recomendaciones/<usuario_id>/<archivo>
-// La URL pública se construye en la app: NEXT_PUBLIC_SUPABASE_URL + /storage/v1/object/public/vao-fotos/ + foto_path
+// foto_path: ruta relativa dentro del bucket 'recomendaciones', formato: <usuario_id>/<archivo>
+// La URL pública se construye en la app: NEXT_PUBLIC_SUPABASE_URL + /storage/v1/object/public/recomendaciones/ + foto_path
 //
 // Columnas editables por authenticated (autor): calificacion, comentario, foto_path
 // Columnas de solo lectura: id, usuario_id, plato_id, estado, fecha
@@ -98,7 +98,7 @@ export interface Recomendacion {
   plato_id: string;
   calificacion: 1 | 2 | 3 | 4 | 5;
   comentario: string | null;
-  foto_path: string;            // ruta relativa, ej: recomendaciones/<uid>/abc123.webp
+  foto_path: string;            // ruta relativa dentro del bucket, ej: <uid>/abc123.webp
   estado: EstadoRecomendacion;
   fecha: string;                // ISO 8601 UTC, fijado por trigger (no por el cliente)
 }
@@ -118,12 +118,19 @@ export function buildFotoUrl(
   bucketName: string,
   fotoPath: string
 ): string {
-  return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${fotoPath}`;
+  const cleanBase = supabaseUrl.replace(/\/+$/, '');
+  const cleanPath = fotoPath.replace(/^\/+/, '');
+  return `${cleanBase}/storage/v1/object/public/${bucketName}/${cleanPath}`;
 }
 
-// Utilidad: valida que un foto_path tenga el formato correcto para un usuario
+// Utilidad: valida que un foto_path tenga exactamente dos segmentos (<usuario_id>/<archivo>)
 export function isFotoPathValida(fotoPath: string, usuarioId: string): boolean {
-  return fotoPath.startsWith(`recomendaciones/${usuarioId}/`);
+  if (!fotoPath || !usuarioId) return false;
+  if (fotoPath.includes('..')) return false;
+  const prefijo = `${usuarioId.toLowerCase()}/`;
+  if (!fotoPath.toLowerCase().startsWith(prefijo)) return false;
+  const segmentos = fotoPath.split('/');
+  return segmentos.length === 2 && Boolean(segmentos[1] && segmentos[1].trim().length > 0);
 }
 
 // ---------------------------------------------------------------------------

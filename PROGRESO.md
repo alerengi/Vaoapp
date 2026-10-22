@@ -1,8 +1,8 @@
 # Registro de Progreso · Proyecto Vao
 
 ## 1. Fase y tarea actuales
-* **Fase:** Fase 1 (Base) completada al 100% · Lista para iniciar Fase 2 (Núcleo)
-* **Tarea actual:** Tarea 1.5 finalizada
+* **Fase:** Fase 2 (Núcleo) en curso
+* **Tarea actual:** Tarea 2.1 finalizada · Lista para Tarea 2.2
 * **Fecha de actualización:** 2026-10-21
 
 ---
@@ -44,8 +44,26 @@
 * **`RestaurantExplorer`:** Explorador reactivo con paginación de 20 en 20 locales (evita superar el límite de 60 req/min de imágenes) y estado vacío con sugerencia amigable si la combinación de filtros no tiene locales.
 * **`createPublicClient`:** Cliente ligero en `lib/supabase/server.ts` sin acceso a cookies para consultas públicas, permitiendo a Next.js 16 pre-renderizar estáticamente con Partial Prerendering (PPR).
 * **`RestaurantListSkeleton`:** Skeleton animado de carga integrado en `app/page.tsx` dentro de `<Suspense>` para streaming instantáneo.
-* **9 nuevas pruebas automatizadas** (`tests/home-ui.test.tsx`) que verifican renderizado, lazy loading, atribuciones, botón de Google Maps, paginación de 20 en 20, filtros y estados vacíos.
-* **Total acumulado: 51 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias de producción y build de Next.js 16 verificado en verde.
+* **9 pruebas automatizadas** (`tests/home-ui.test.tsx`).
+
+### Tarea 2.1 · Bucket de Supabase Storage y políticas de seguridad
+* **Migración 003 (`supabase/migrations/003_storage_recomendaciones.sql`):**
+  * Bucket `recomendaciones` en `storage.buckets` con límite estricto de 5 MB y tipos MIME permitidos (`image/jpeg`, `image/png`, `image/webp`).
+  * Políticas RLS en `storage.objects`:
+    - `SELECT`: lectura pública para cualquier visitante.
+    - `INSERT`: solo usuarios autenticados pueden subir fotos a su propia subcarpeta con exactamente 2 segmentos (`<usuario_id>/<archivo>`), sin path traversal (`..`).
+    - `UPDATE`: solo el autor puede actualizar sus fotos, con cláusulas `USING` y `WITH CHECK` simétricas para evitar mover archivos a carpetas de otros usuarios.
+    - `DELETE`: solo el autor puede borrar sus archivos.
+  * Actualización de la función trigger `handle_recomendacion_before_upsert()` en PostgreSQL para validar de forma nativa la convención de 2 segmentos `<usuario_id>/<archivo>`.
+* **Módulo `lib/storage.ts`:**
+  * Validador de buffers con detección de magic bytes reales (JPEG `FF D8 FF`, PNG `89 50 4E 47`, WEBP `RIFF....WEBP`), impidiendo evasiones por renombrado de extensiones.
+  * Validador de tamaño máximo de 5 MB (`FOTO_MUY_PESADA`) y archivos vacíos (`FOTO_VACIA`).
+  * Generador de rutas seguras `generateSecureImagePath(usuarioId, ext)` que crea `${usuarioId}/${crypto.randomUUID()}.${ext}` sanitizando IDs y extensiones.
+  * Constructor de URLs públicas `getPublicImageUrl()` y validador de rutas de storage `isValidStorageFotoPath()`.
+* **Sincronización en `lib/types.ts`:**
+  * Actualizada función `isFotoPathValida()` para validar exactamente 2 segmentos `<usuario_id>/<archivo>` y rechazar `..` o subdirectorios.
+* **19 nuevas pruebas automatizadas (`tests/storage.test.ts`):** Cobertura exhaustiva de magic bytes, límites, generación segura de rutas, validación del trigger y reglas SQL de la migración 003.
+* **Total acumulado: 70 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias y compilación de Next.js 16 en verde.
 
 ---
 
@@ -60,26 +78,21 @@
 
 *Criterio de éxito de Fase 1 cumplido:* Un usuario se registra con Google y ve la lista de restaurantes de Miraflores y Barranco.
 
-### Fase 2 · Núcleo (Siguiente fase)
-* [ ] **Tarea 2.1 · Bucket de Supabase Storage para recomendaciones:**
-  * Crear bucket `recomendaciones` con políticas de seguridad RLS en Storage (solo autor puede subir/reemplazar/borrar en su propia subcarpeta `recomendaciones/<usuario_id>/` y bloqueo de path traversal `..`).
-* [ ] **Tarea 2.2 · Búsqueda por plato, restaurante o cocina:**
-  * Barra de búsqueda reactiva (tolerante a tildes y sinónimos) con ordenamiento bayesiano por Puntaje Vao (HU-01).
+### Fase 2 · Núcleo (En curso)
+* [x] **Tarea 2.1 · Bucket de Supabase Storage para recomendaciones:**
+  * Bucket `recomendaciones` con políticas de seguridad RLS en Storage (SELECT público, INSERT/UPDATE/DELETE exclusivos para autor con 2 segmentos exactos `<usuario_id>/<archivo>`, UPDATE con USING y WITH CHECK, trigger sincronizado y pruebas de magic bytes).
+* [ ] **Tarea 2.2 · Motor del Puntaje Vao y anti-spam:**
+  * Módulo TypeScript y funciones/triggers SQL con cálculo bayesiano ponderado por validaciones ($C=5$, tope 3.0, $f_i$ de antigüedad) y regla anti-spam (máx 10 recomendaciones/día; cuentas <24h no suman).
 * [ ] **Tarea 2.3 · Recomendar un plato con foto (HU-02):**
-  * Formulario completable en <60s, compresión de imagen en cliente (<5 MB) y subida a Supabase Storage.
+  * Formulario completable en <60s, compresión de imagen en cliente (<5 MB), autocompletado y subida a Supabase Storage.
 * [ ] **Tarea 2.4 · Validar recomendación con "¡Confirmo!" (HU-03):**
   * Validación optimista reversible, bloqueo de auto-validación y recálculo automático del Puntaje Vao.
+* [ ] **Tarea 2.5 · Búsqueda por plato, restaurante o cocina (HU-01):**
+  * Barra de búsqueda reactiva (tolerante a tildes y sinónimos) con ordenamiento bayesiano por Puntaje Vao.
 
 ---
 
 ## 4. Pendientes para Fases Posteriores
-
-### Fase 2 · Storage
-> ⚠️ **Bucket de Supabase Storage** — Configurar el bucket `recomendaciones`:
-> * **INSERT (subir):** solo usuarios autenticados pueden subir archivos a `recomendaciones/<su_id>/`. Prohibido `..`.
-> * **UPDATE (reemplazar):** un usuario solo puede reemplazar archivos dentro de `recomendaciones/<su_id>/`. Prohibido `..`.
-> * **DELETE (borrar):** un usuario solo puede borrar archivos dentro de `recomendaciones/<su_id>/`. Prohibido `..`.
-> * **SELECT (leer/descargar):** lectura pública para todos.
 
 ### Fase 4 · Despliegue en Vercel
 > ⚠️ **Supabase Auth URL Configuration:**
@@ -115,8 +128,17 @@
 7. **Separación de cliente público y autenticado en servidor:**
    Se implementó `createPublicClient()` en `lib/supabase/server.ts` para consultas públicas (catálogo de restaurantes) sin tocar cookies, evitando que Next.js cancele el pre-renderizado estático de la página principal.
 
+8. **Convención unificada de rutas en Storage y base de datos:**
+   Se unificó en todas las capas la convención de rutas relativas al bucket:
+   - Nombre de bucket: `recomendaciones`
+   - Formato de ruta / `foto_path`: `<usuario_id>/<uuid>.<ext>` (exactamente 2 segmentos, sin prefijo de bucket redundante).
+   - Políticas RLS de `storage.objects` validan `(storage.foldername(name))[1] = auth.uid()::text`, `array_length(string_to_array(name, '/'), 1) = 2` y `name NOT LIKE '%..%'`.
+   - La política UPDATE implementa simétricamente `USING` y `WITH CHECK` para bloquear cualquier intento de mover objetos a carpetas ajenas.
+   - El trigger `handle_recomendacion_before_upsert` en Postgres valida esta misma convención de 2 segmentos antes de persistir en `recomendaciones.foto_path`.
+   - `lib/storage.ts` y `lib/types.ts` aplican esta misma regla para validación y generación.
+
 ---
 
 ## 6. Siguiente paso
-* Probar la interfaz mobile-first en celular o con la herramienta de emulación móvil del navegador en 375 px de ancho.
-* Dar inicio a la **Fase 2 (Núcleo)** con la **Tarea 2.1**: configuración del bucket de Storage con políticas de seguridad.
+* Ejecutar la migración `supabase/migrations/003_storage_recomendaciones.sql` en el SQL Editor de Supabase y verificar la creación del bucket y sus políticas.
+* Proceder con el Plan First de la **Tarea 2.2**: Motor del Puntaje Vao bayesiano y reglas anti-spam.

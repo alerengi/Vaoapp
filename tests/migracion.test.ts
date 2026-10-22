@@ -163,28 +163,31 @@ describe('Punto 5 · handle_new_user con nombre seguro', () => {
 // Tipos TypeScript: consistencia con el esquema SQL
 // ---------------------------------------------------------------------------
 describe('Tipos TypeScript · consistencia con el esquema', () => {
-  it('isFotoPathValida debe aceptar paths con el prefijo correcto', () => {
+  it('isFotoPathValida debe aceptar paths con el prefijo correcto (<usuario_id>/<archivo>)', () => {
     const uid = 'abc-123';
-    expect(isFotoPathValida(`recomendaciones/${uid}/foto.webp`, uid)).toBe(true);
-    expect(isFotoPathValida(`recomendaciones/${uid}/carpeta/foto.jpg`, uid)).toBe(true);
+    expect(isFotoPathValida(`${uid}/foto.webp`, uid)).toBe(true);
+    expect(isFotoPathValida(`${uid}/foto-123.jpg`, uid)).toBe(true);
   });
 
-  it('isFotoPathValida debe rechazar paths de otro usuario', () => {
+  it('isFotoPathValida debe rechazar paths de otro usuario, con subcarpetas o maliciosos', () => {
     const uid = 'abc-123';
     const otroUid = 'otro-456';
-    expect(isFotoPathValida(`recomendaciones/${otroUid}/foto.webp`, uid)).toBe(false);
-    expect(isFotoPathValida('recomendaciones/foto.webp', uid)).toBe(false);
+    expect(isFotoPathValida(`${otroUid}/foto.webp`, uid)).toBe(false);
+    expect(isFotoPathValida('foto.webp', uid)).toBe(false);
+    expect(isFotoPathValida(`${uid}/subcarpeta/foto.webp`, uid)).toBe(false);
+    expect(isFotoPathValida(`${uid}/../foto.webp`, uid)).toBe(false);
+    expect(isFotoPathValida(`recomendaciones/${uid}/foto.webp`, uid)).toBe(false);
     expect(isFotoPathValida('https://otro.com/foto.webp', uid)).toBe(false);
   });
 
   it('buildFotoUrl debe construir la URL pública correcta', () => {
     const url = buildFotoUrl(
       'https://xyz.supabase.co',
-      'vao-fotos',
-      'recomendaciones/abc-123/foto.webp'
+      'recomendaciones',
+      'abc-123/foto.webp'
     );
     expect(url).toBe(
-      'https://xyz.supabase.co/storage/v1/object/public/vao-fotos/recomendaciones/abc-123/foto.webp'
+      'https://xyz.supabase.co/storage/v1/object/public/recomendaciones/abc-123/foto.webp'
     );
   });
 });
