@@ -8,7 +8,8 @@
  */
 
 export const BUCKET_RECOMENDACIONES = 'recomendaciones';
-export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB (límite del bucket)
+export const SERVER_ACTION_MAX_FILE_SIZE = 3.5 * 1024 * 1024; // 3.5 MB (límite seguro para Vercel)
 
 export const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -94,7 +95,8 @@ export function detectRealMimeType(
  * - Verifica magic bytes para garantizar que es un JPG, PNG o WEBP real
  */
 export function validateImageBuffer(
-  buffer: Uint8Array | ArrayBuffer
+  buffer: Uint8Array | ArrayBuffer,
+  maxSizeBytes: number = MAX_FILE_SIZE_BYTES
 ): ImageValidationResult {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
 
@@ -108,12 +110,13 @@ export function validateImageBuffer(
     };
   }
 
-  if (bytes.length > MAX_FILE_SIZE_BYTES) {
+  if (bytes.length > maxSizeBytes) {
+    const mbLimit = Math.round((maxSizeBytes / (1024 * 1024)) * 10) / 10;
     return {
       ok: false,
       error: {
         codigo: 'FOTO_MUY_PESADA',
-        mensaje: 'La foto supera los 5 MB permitidos.',
+        mensaje: `La foto supera los ${mbLimit} MB permitidos.`,
       },
     };
   }

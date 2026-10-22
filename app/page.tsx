@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Suspense } from 'react'
 import { createPublicClient } from '@/lib/supabase/server'
 import { AuthButton } from '@/components/AuthButton'
@@ -47,9 +48,14 @@ export default function Home() {
             </div>
           </div>
 
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-neutral-900 text-amber-400/90 border border-neutral-800">
-            Fase 1 · MVP
-          </span>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/recomendar"
+              className="text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-neutral-950 shadow-sm transition min-h-[36px] flex items-center gap-1"
+            >
+              <span className="text-sm leading-none">+</span> Recomendar
+            </Link>
+          </div>
         </header>
 
         {/* Sección de bienvenida e inicio de sesión */}

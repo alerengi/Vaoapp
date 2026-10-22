@@ -77,6 +77,25 @@
 * **25 pruebas automatizadas (`tests/puntaje-vao.test.ts`):** Verificación exhaustiva de constantes, pesos, amortiguación bayesiana (caso 3.75), tope de validaciones, decaimiento por antigüedad, anti-spam (<24 h), triggers de fecha y revocación de permisos de ejecución.
 * **Total acumulado: 95 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias y compilación de Next.js 16 en verde.
 
+### Tarea 2.3 · Recomendar un plato con foto (HU-02)
+* **Server Action `guardarRecomendacion` (`app/actions/recomendar.ts`):**
+  * Validación de sesión con `supabase.auth.getUser()`.
+  * Validación de inputs (restaurante, calificación 1 a 5, comentario ≤ 280 caracteres, foto obligatoria).
+  * Manejo de concurrencia al crear platos: captura de error `23505` (duplicado en `restaurante_id, nombre_normalizado`) para reutilizar el plato existente sin fallar.
+  * Flujo sin upsert: verifica si ya existe recomendación previa del usuario para ese plato y ejecuta `INSERT` o `UPDATE` exclusivamente en las columnas permitidas por RLS.
+  * Subida segura a Storage con ruta `<usuario_id>/<uuid>.<ext>` (Decisión 8).
+  * Limpieza de Storage: rollback inmediato de la foto subida si falla la persistencia en base de datos; borrado de la foto anterior únicamente tras el éxito del `UPDATE` con foto nueva.
+* **Compresor y Privacidad (`lib/image-compressor.ts`):**
+  * Compresión nativa con HTML5 Canvas sin dependencias npm pesadas.
+  * Eliminación sistemática de metadatos EXIF (incluyendo coordenadas GPS de la cámara).
+  * Límite estricto de cliente a 3 MB, garantizando compatibilidad con Vercel (4.5 MB) y Server Actions de Next.js (`4mb` configurado en `next.config.ts`).
+* **Interfaz Mobile-First (`components/RecomendacionForm.tsx`, `app/recomendar/page.tsx`):**
+  * Formulario completable en <60 segundos: selector de restaurante, selector/creador de plato, 5 estrellas táctiles grandes (≥ 44 px), input de foto con preview instantáneo y textarea con contador en tiempo real (`0/280`).
+  * Enlace "+ Recomendar" visible en la cabecera móvil de la aplicación.
+  * Renderizado compatible con Partial Prerendering (PPR) de Next.js 16 envolviendo el contenido dinámico en `<Suspense>`.
+* **9 nuevas pruebas automatizadas (`tests/recomendar.test.ts`):** Verificación de compresión proporcional, límites de tamaño, rechazo a usuarios no autenticados, validaciones de inputs y rollback de Storage en caso de error de BD.
+* **Total acumulado: 104 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias y compilación de Next.js 16 en verde.
+
 ---
 
 ## 3. Estado de Fases
@@ -95,8 +114,8 @@
   * Bucket `recomendaciones` con políticas de seguridad RLS en Storage (SELECT público, INSERT/UPDATE/DELETE exclusivos para autor con 2 segmentos exactos `<usuario_id>/<archivo>`, UPDATE con USING y WITH CHECK, trigger sincronizado y pruebas de magic bytes).
 * [x] **Tarea 2.2 · Motor del Puntaje Vao y anti-spam:**
   * Funciones SQL puras en Postgres (`calcular_puntaje_vao`, `calcular_peso_recomendacion`), recálculo en bloque por categoría y distrito con `SECURITY DEFINER`, triggers tolerantes a borrado en cascada y espejo TypeScript idéntico en `lib/puntaje-vao.ts`.
-* [ ] **Tarea 2.3 · Recomendar un plato con foto (HU-02):**
-  * Formulario completable en <60s, compresión de imagen en cliente (<5 MB), autocompletado y subida a Supabase Storage.
+* [x] **Tarea 2.3 · Recomendar un plato con foto (HU-02):**
+  * Formulario mobile-first (<60s) en `/recomendar`, compresión Canvas que elimina EXIF/GPS (<3 MB), sin upsert (verificación previa y update selectivo), manejo concurrente de platos duplicados, rollback de Storage y 104 pruebas en verde.
 * [ ] **Tarea 2.4 · Validar recomendación con "¡Confirmo!" (HU-03):**
   * Validación optimista reversible, bloqueo de auto-validación y recálculo automático del Puntaje Vao.
 * [ ] **Tarea 2.5 · Búsqueda por plato, restaurante o cocina (HU-01):**
@@ -162,8 +181,15 @@
    - Las funciones de recálculo usan `SECURITY DEFINER` y `SET search_path = public` para permitir actualizar `platos` sin conceder privilegios directos de UPDATE a usuarios autenticados.
    - El trigger de `validaciones` tolera borrados en cascada evitando fallos cuando la recomendación padre se elimina.
 
+10. **Flujo de recomendación mobile-first, privacidad y manejo de concurrencia:**
+    - Re-codificación nativa en Canvas de HTML5 para remover metadatos EXIF (coordenadas GPS) sin librerías externas.
+    - Límite de Server Actions configurado en `next.config.ts` (`experimental.serverActions.bodySizeLimit: '4mb'`), límite de compresión cliente a 3 MB y validación de servidor a 3.5 MB (seguro para Vercel 4.5 MB).
+    - No usar upsert: se consulta existencia previa para hacer `INSERT` o `UPDATE` específico (respetando los permisos por columna de RLS).
+    - Rollback en Storage: si falla la inserción en base de datos, se borra la foto recién subida. Al editar con foto nueva, la anterior se borra únicamente tras la actualización exitosa.
+    - Concurrencia de platos: si dos usuarios registran el mismo plato nuevo a la vez, se captura el error `23505` (unique en `restaurante_id, nombre_normalizado`) y se asocia al plato existente sin error.
+
 ---
 
 ## 6. Siguiente paso
-* Ejecutar la migración `supabase/migrations/004_puntaje_vao_recalculo.sql` en el SQL Editor de Supabase y verificar los cálculos con las consultas de prueba.
-* Proceder con el Plan First de la **Tarea 2.3**: Recomendar un plato con foto (HU-02).
+* Probar el formulario de recomendación de punta a punta (`/recomendar`) y verificar los datos en Supabase.
+* Proceder con el Plan First de la **Tarea 2.4**: Validar recomendación con "¡Confirmo!" (HU-03).
