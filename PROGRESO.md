@@ -2,7 +2,7 @@
 
 ## 1. Fase y tarea actuales
 * **Fase:** Fase 2 (Núcleo) en curso
-* **Tarea actual:** Tarea 2.1 finalizada · Lista para Tarea 2.2
+* **Tarea actual:** Tarea 2.2 finalizada · Lista para Tarea 2.3
 * **Fecha de actualización:** 2026-10-21
 
 ---
@@ -62,8 +62,20 @@
   * Constructor de URLs públicas `getPublicImageUrl()` y validador de rutas de storage `isValidStorageFotoPath()`.
 * **Sincronización en `lib/types.ts`:**
   * Actualizada función `isFotoPathValida()` para validar exactamente 2 segmentos `<usuario_id>/<archivo>` y rechazar `..` o subdirectorios.
-* **19 nuevas pruebas automatizadas (`tests/storage.test.ts`):** Cobertura exhaustiva de magic bytes, límites, generación segura de rutas, validación del trigger y reglas SQL de la migración 003.
-* **Total acumulado: 70 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias y compilación de Next.js 16 en verde.
+* **19 pruebas automatizadas (`tests/storage.test.ts`).**
+
+### Tarea 2.2 · Motor del Puntaje Vao y anti-spam
+* **Migración 004 (`supabase/migrations/004_puntaje_vao_recalculo.sql`):**
+  * Función pura `public.calcular_peso_recomendacion(v_i, f_i)`: `w_i = min(1 + 0.25 * v_i, 3.0) * f_i`.
+  * Función pura `public.calcular_puntaje_vao(m, calificaciones[], pesos[])`: fórmula bayesiana $(C \cdot m + \sum w_i r_i) / (C + \sum w_i)$ con $C=5.0$ y fallback $m=3.5$.
+  * Función orquestadora `public.recalcular_platos_categoria_distrito(categoria_id, distrito)` con `SECURITY DEFINER` y `SET search_path = public`: recalcula todos los platos de la misma categoría y distrito para sincronizar el promedio $m$. Permisos de ejecución revocados a `PUBLIC, anon, authenticated` (solo invocable internamente por triggers).
+  * Triggers automáticos en `recomendaciones` y `validaciones`, con tolerancia estricta a borrados en cascada.
+  * **Anti-spam estricto de fechas:** Triggers `BEFORE INSERT` en `validaciones` y `reportes` que fuerzan `fecha = NOW()`, junto a permisos por columna (`GRANT INSERT (usuario_id, recomendacion_id)` y `GRANT INSERT (usuario_id, recomendacion_id, motivo)` a `authenticated`), impidiendo que un cliente malicioso envíe fechas futuras para burlar el filtro de 24 horas.
+* **Módulo `lib/puntaje-vao.ts`:**
+  * Espejo tipado con las mismas constantes y funciones matemáticas de puntaje bayesiano y filtro anti-spam.
+  * `calcularPuntajeRestaurante()`: puntaje del mejor plato para búsqueda por plato, o promedio de los 3 mejores platos para búsqueda general.
+* **25 pruebas automatizadas (`tests/puntaje-vao.test.ts`):** Verificación exhaustiva de constantes, pesos, amortiguación bayesiana (caso 3.75), tope de validaciones, decaimiento por antigüedad, anti-spam (<24 h), triggers de fecha y revocación de permisos de ejecución.
+* **Total acumulado: 95 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias y compilación de Next.js 16 en verde.
 
 ---
 
@@ -81,8 +93,8 @@
 ### Fase 2 · Núcleo (En curso)
 * [x] **Tarea 2.1 · Bucket de Supabase Storage para recomendaciones:**
   * Bucket `recomendaciones` con políticas de seguridad RLS en Storage (SELECT público, INSERT/UPDATE/DELETE exclusivos para autor con 2 segmentos exactos `<usuario_id>/<archivo>`, UPDATE con USING y WITH CHECK, trigger sincronizado y pruebas de magic bytes).
-* [ ] **Tarea 2.2 · Motor del Puntaje Vao y anti-spam:**
-  * Módulo TypeScript y funciones/triggers SQL con cálculo bayesiano ponderado por validaciones ($C=5$, tope 3.0, $f_i$ de antigüedad) y regla anti-spam (máx 10 recomendaciones/día; cuentas <24h no suman).
+* [x] **Tarea 2.2 · Motor del Puntaje Vao y anti-spam:**
+  * Funciones SQL puras en Postgres (`calcular_puntaje_vao`, `calcular_peso_recomendacion`), recálculo en bloque por categoría y distrito con `SECURITY DEFINER`, triggers tolerantes a borrado en cascada y espejo TypeScript idéntico en `lib/puntaje-vao.ts`.
 * [ ] **Tarea 2.3 · Recomendar un plato con foto (HU-02):**
   * Formulario completable en <60s, compresión de imagen en cliente (<5 MB), autocompletado y subida a Supabase Storage.
 * [ ] **Tarea 2.4 · Validar recomendación con "¡Confirmo!" (HU-03):**
@@ -93,6 +105,11 @@
 ---
 
 ## 4. Pendientes para Fases Posteriores
+
+### Fase 2 / Fase 4 · Recálculo periódico de antigüedad ($f_i$)
+> ⚠️ **Recálculo periódico de factor de antigüedad ($f_i$):**
+> * Las recomendaciones pierden peso cuando superan los 12 meses ($f_i$ pasa de 1.0 a 0.5) en función del paso del tiempo, incluso si no reciben nuevas validaciones o ediciones.
+> * En Fase 4 o post-v1, programar una función periódica (pg_cron en Supabase o cron en Vercel) que invoque periódicamente el recálculo para platos con recomendaciones que hayan cruzado el umbral de los 12 meses.
 
 ### Fase 4 · Despliegue en Vercel
 > ⚠️ **Supabase Auth URL Configuration:**
@@ -137,8 +154,16 @@
    - El trigger `handle_recomendacion_before_upsert` en Postgres valida esta misma convención de 2 segmentos antes de persistir en `recomendaciones.foto_path`.
    - `lib/storage.ts` y `lib/types.ts` aplican esta misma regla para validación y generación.
 
+9. **Motor de Puntaje Vao bayesiano y única fuente de verdad en SQL:**
+   - La base de datos es la única fuente de verdad para el cálculo que se persiste: funciones puras `calcular_puntaje_vao()` y `calcular_peso_recomendacion()`.
+   - Constante $C=5.0$, tope de peso por validación $3.0$ y valor de reserva/fallback $m=3.5$ cuando no existen recomendaciones previas en la categoría y distrito.
+   - Regla anti-spam: las confirmaciones de usuarios cuya cuenta tiene menos de 24 horas al momento de validar nunca se contabilizan en $v_i$.
+   - Como $m$ depende de todas las recomendaciones de la categoría en el distrito, la función `recalcular_platos_categoria_distrito()` recalcula todos los platos de esa combinación en bloque.
+   - Las funciones de recálculo usan `SECURITY DEFINER` y `SET search_path = public` para permitir actualizar `platos` sin conceder privilegios directos de UPDATE a usuarios autenticados.
+   - El trigger de `validaciones` tolera borrados en cascada evitando fallos cuando la recomendación padre se elimina.
+
 ---
 
 ## 6. Siguiente paso
-* Ejecutar la migración `supabase/migrations/003_storage_recomendaciones.sql` en el SQL Editor de Supabase y verificar la creación del bucket y sus políticas.
-* Proceder con el Plan First de la **Tarea 2.2**: Motor del Puntaje Vao bayesiano y reglas anti-spam.
+* Ejecutar la migración `supabase/migrations/004_puntaje_vao_recalculo.sql` en el SQL Editor de Supabase y verificar los cálculos con las consultas de prueba.
+* Proceder con el Plan First de la **Tarea 2.3**: Recomendar un plato con foto (HU-02).
