@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 /**
  * BotonConfirmar — Botón "¡Confirmo!" con actualización optimista (HU-03).
@@ -113,24 +113,24 @@ export function BotonConfirmar({
         className={[
           // Base — área táctil ≥ 44 px
           'min-h-[44px] min-w-[44px] flex items-center justify-center gap-1.5',
-          'rounded-full px-3 text-sm font-semibold transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400',
+          'rounded-full px-3 text-sm font-bold transition-all duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500',
           'select-none',
           // Estado confirmado (activo)
           optimisticEstado.confirmado && !esPropio
-            ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300 scale-[0.97]'
+            ? 'bg-orange-50 border border-orange-200 text-[#C2410C] shadow-2xs scale-[0.98]'
             : '',
           // Estado sin confirmar
           !optimisticEstado.confirmado && !esPropio && !sinSesion
-            ? 'bg-neutral-800/60 border border-neutral-700/50 text-neutral-400 hover:border-amber-500/40 hover:text-amber-300 hover:bg-amber-500/10 active:scale-95'
+            ? 'bg-white border border-stone-200 text-stone-700 hover:border-orange-300 hover:text-[#EA580C] hover:bg-orange-50/50 shadow-2xs active:scale-95'
             : '',
           // Sin sesión
           sinSesion
-            ? 'bg-neutral-800/40 border border-neutral-700/40 text-neutral-500 hover:border-amber-500/30 hover:text-amber-400/70 cursor-pointer active:scale-95'
+            ? 'bg-white border border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50 cursor-pointer shadow-2xs active:scale-95'
             : '',
           // Propio — deshabilitado
           esPropio
-            ? 'opacity-30 cursor-not-allowed border border-neutral-800 text-neutral-600 bg-transparent'
+            ? 'opacity-40 cursor-not-allowed border border-stone-200 text-stone-400 bg-stone-100'
             : '',
           // Pendiente (transición en vuelo)
           isPending ? 'opacity-60 pointer-events-none' : '',
@@ -138,11 +138,11 @@ export function BotonConfirmar({
           .filter(Boolean)
           .join(' ')}
       >
-        {/* Ícono de check/corazón animado */}
+        {/* Ícono de check animado */}
         <span
           className={[
             'text-base leading-none transition-transform duration-150',
-            optimisticEstado.confirmado ? 'scale-110' : 'scale-100',
+            optimisticEstado.confirmado ? 'scale-110 text-[#EA580C]' : 'scale-100',
           ].join(' ')}
           aria-hidden="true"
         >
@@ -160,8 +160,8 @@ export function BotonConfirmar({
       {/* Contador de validaciones */}
       <span
         className={[
-          'text-xs font-semibold tabular-nums min-w-[1.5rem] text-center transition-colors duration-150',
-          optimisticEstado.confirmado ? 'text-amber-400' : 'text-neutral-500',
+          'text-xs font-bold tabular-nums min-w-[1.5rem] text-center transition-colors duration-150',
+          optimisticEstado.confirmado ? 'text-[#EA580C]' : 'text-stone-500',
         ].join(' ')}
         aria-live="polite"
         aria-label={`${optimisticEstado.contador} confirmaciones`}

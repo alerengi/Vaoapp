@@ -128,7 +128,10 @@
 
 ---
 
-## 4. Pendientes para Fases Posteriores
+### Fase 2 · Verificación pendiente de "¡Confirmo!" con dos cuentas (HU-03)
+> ⚠️ **Prueba pendiente en navegador:**
+> * Queda pendiente la verificación manual del flujo de "¡Confirmo!" con dos cuentas de Google distintas (usuario autor vs usuario validador).
+> * Verificar específicamente que al confirmar desde una segunda cuenta el contador se incremente de forma optimista y persistente, y no regrese a 0 tras revalidar con el servidor.
 
 ### Fase 2 / Fase 4 · Recálculo periódico de antigüedad ($f_i$)
 > ⚠️ **Recálculo periódico de factor de antigüedad ($f_i$):**
@@ -192,6 +195,11 @@
     - No usar upsert: se consulta existencia previa para hacer `INSERT` o `UPDATE` específico (respetando los permisos por columna de RLS).
     - Rollback en Storage: si falla la inserción en base de datos, se borra la foto recién subida. Al editar con foto nueva, la anterior se borra únicamente tras la actualización exitosa.
     - Concurrencia de platos: si dos usuarios registran el mismo plato nuevo a la vez, se captura el error `23505` (unique en `restaurante_id, nombre_normalizado`) y se asocia al plato existente sin error.
+
+11. **Regla Next.js 16: Componentes dinámicos (`await connection()`) y verificación obligatoria en `dev`:**
+    - **Causa técnica:** Next.js 16 con Partial Prerendering (PPR) / Cache Components bloquea el renderizado en desarrollo si encuentra llamadas a valores inestables (`Date.now()`, `new Date()`) o accesos a contexto de petición (`cookies()`, `headers()`, sesión con `createClient()`) dentro de Server Components sin declarar explícitamente la dynamicidad de la rama.
+    - **Regla de arquitectura:** Todo Server Component que dependa del reloj del sistema (`Date.now()`, fechas relativas), de cookies o de la sesión del usuario debe invocar `await connection()` (importado desde `next/server`) en la primera línea de su cuerpo asíncrono.
+    - **Regla estricta de entrega:** `npm run build` no es suficiente para dar una tarea por cerrada. Antes del cierre de cualquier tarea, **cada página creada o modificada debe abrirse y verificarse con `npm run dev`** para asegurar que no existan bloqueos de prerenderizado en runtime.
 
 ---
 

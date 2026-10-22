@@ -92,27 +92,44 @@ async function RecomendarContent({ searchParams }: PageProps) {
 
 export default function RecomendarPage({ searchParams }: PageProps) {
   return (
-    <main className="min-h-screen bg-amber-50/40 text-gray-900 pb-12">
-      {/* Barra superior de navegación */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-orange-100 shadow-xs px-4 py-3">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+    <main className="min-h-screen bg-[#FAFAF9] text-stone-900 pb-16">
+      {/* Cabecera blanca unificada con logo Vao */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-2xs">
+        <div className="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
           <Link
             href="/"
-            className="text-xs font-semibold text-gray-600 hover:text-orange-600 flex items-center gap-1 min-h-[44px]"
+            className="flex items-center gap-2 group min-h-[44px]"
           >
-            ← Volver
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#EA580C] to-[#F97316] flex items-center justify-center font-black text-white text-base shadow-sm group-hover:scale-105 transition-transform">
+              V
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-extrabold text-base tracking-tight text-stone-900 leading-none">
+                Vao
+              </span>
+              <span className="text-[10px] text-stone-500 font-semibold">
+                ← Volver al inicio
+              </span>
+            </div>
           </Link>
-          <h1 className="text-sm font-bold text-gray-900">Recomendar un plato</h1>
-          <div className="w-12 text-right">
-            <span className="text-xs text-orange-600 font-semibold">v1</span>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline-block text-xs font-bold text-stone-700">
+              Recomendar plato
+            </span>
+            <Suspense fallback={<div className="w-16 h-8 bg-stone-100 rounded-lg animate-pulse" />}>
+              <AuthButton />
+            </Suspense>
           </div>
         </div>
       </header>
 
       {/* Contenido dinámico envuelto en Suspense para Partial Prerendering de Next.js 16 */}
-      <Suspense fallback={<RecomendarSkeleton />}>
-        <RecomendarContent searchParams={searchParams} />
-      </Suspense>
+      <div className="max-w-xl mx-auto px-4 pt-6">
+        <Suspense fallback={<RecomendarSkeleton />}>
+          <RecomendarContent searchParams={searchParams} />
+        </Suspense>
+      </div>
     </main>
   );
 }

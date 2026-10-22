@@ -35,65 +35,58 @@ async function RestaurantFeed() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col items-center p-4 sm:p-6 selection:bg-amber-500 selection:text-neutral-950">
-      {/* Contenedor Principal Mobile-First (ajustado a celulares desde 375px) */}
-      <div className="w-full max-w-md flex flex-col items-center">
-        {/* Header móvil */}
-        <header className="w-full flex items-center justify-between py-4 border-b border-neutral-900 sticky top-0 bg-neutral-950/90 backdrop-blur-md z-30">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center font-black text-neutral-950 text-lg shadow-lg shadow-orange-500/20">
+    <div className="min-h-screen bg-[#FAFAF9] text-stone-900 flex flex-col selection:bg-orange-100 selection:text-orange-900">
+      {/* Cabecera blanca estilo Airbnb / Rappi (ancho completo en pantallas grandes) */}
+      <header className="w-full border-b border-stone-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-40 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+          {/* Logo Vao */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#EA580C] to-[#F97316] flex items-center justify-center font-black text-white text-lg shadow-sm shadow-orange-600/30 group-hover:scale-105 transition-transform">
               V
             </div>
             <div className="flex flex-col text-left">
-              <span className="font-extrabold text-xl tracking-tight text-white leading-none">
+              <span className="font-extrabold text-xl tracking-tight text-stone-900 leading-none">
                 Vao
               </span>
-              <span className="text-[10px] text-neutral-400 font-medium">Dónde comer rico</span>
+              <span className="text-[10px] text-stone-600 font-semibold tracking-wide">
+                Dónde comer rico
+              </span>
             </div>
-          </div>
+          </Link>
 
-          <div className="flex items-center gap-2">
+          {/* Acciones: Botón Recomendar + Sesión Google */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/recomendar"
-              className="text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-neutral-950 shadow-sm transition min-h-[36px] flex items-center gap-1"
+              className="text-xs font-bold px-3.5 py-2 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white shadow-sm hover:shadow transition-all min-h-[40px] flex items-center gap-1.5 active:scale-95 cursor-pointer"
             >
-              <span className="text-sm leading-none">+</span> Recomendar
+              <span className="text-base leading-none font-extrabold">+</span>
+              <span className="hidden xs:inline">Recomendar</span>
+              <span className="xs:hidden">Plato</span>
             </Link>
+
+            <Suspense fallback={<div className="w-20 h-10 bg-stone-100 rounded-xl animate-pulse" />}>
+              <AuthButton />
+            </Suspense>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Sección de bienvenida e inicio de sesión */}
-        <section className="w-full flex flex-col items-center text-center py-6 px-1 border-b border-neutral-900/60">
-          <h1 className="text-2xl font-extrabold tracking-tight text-white leading-tight mb-2">
-            Dónde comer en{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">
-              Miraflores & Barranco
-            </span>
-          </h1>
+      {/* Contenedor Principal Responsive (375px móvil hasta 3 columnas en desktop) */}
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col">
+        {/* Notificación si hubo error de OAuth */}
+        <Suspense fallback={null}>
+          <AuthErrorBanner />
+        </Suspense>
 
-          <p className="text-neutral-400 text-xs sm:text-sm max-w-xs mb-5 leading-relaxed">
-            Explora restaurantes reales de makis, ceviche y hamburguesas validados por la comunidad.
-          </p>
-
-          {/* Notificación de error si falló OAuth */}
-          <Suspense fallback={null}>
-            <AuthErrorBanner />
-          </Suspense>
-
-          {/* Botón de sesión OAuth con Google */}
-          <div className="w-full flex justify-center mb-1">
-            <AuthButton />
-          </div>
-        </section>
-
-        {/* Explorador de Restaurantes en Suspense para Streaming con Partial Prerendering de Next.js 16 */}
-        <main className="w-full py-4 flex flex-col gap-2">
+        {/* Explorador de Restaurantes con Hero Airbnb integrado */}
+        <main className="w-full flex flex-col">
           <Suspense fallback={<RestaurantListSkeleton />}>
             <RestaurantFeed />
           </Suspense>
 
-          {/* Sección social: últimas recomendaciones con botón ¡Confirmo! (HU-03) */}
-          <div className="w-full border-t border-neutral-900/60 pt-4">
+          {/* Sección social: últimas recomendaciones con botón ¡Confirmo! (3 columnas en desktop) */}
+          <div className="w-full border-t border-stone-200/80 pt-8 mt-4">
             <Suspense fallback={<RecomendacionesRecientesSkeleton />}>
               <RecomendacionesRecientes />
             </Suspense>

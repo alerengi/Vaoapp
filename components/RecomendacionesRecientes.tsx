@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RecomendacionesRecientes — Server Component.
  *
  * Muestra las últimas 10 recomendaciones visibles con foto, plato, restaurante,
@@ -12,6 +12,7 @@
  * Esto hace la sección dinámica; por eso se envuelve en <Suspense> desde page.tsx.
  */
 
+import { connection } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { buildFotoUrl } from '@/lib/types';
 import { BotonConfirmar } from '@/components/BotonConfirmar';
@@ -56,6 +57,7 @@ function tiempoRelativo(fechaIso: string): string {
 }
 
 export async function RecomendacionesRecientes() {
+  await connection();
   const supabase = await createClient();
 
   // Sesión del usuario (puede ser null)
@@ -115,11 +117,16 @@ export async function RecomendacionesRecientes() {
 
   return (
     <section className="w-full py-4" aria-label="Recomendaciones recientes">
-      <h2 className="text-base font-bold text-neutral-200 mb-4 px-1">
-        Recomendaciones recientes
-      </h2>
+      <div className="mb-6 px-1">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 tracking-tight">
+          Recomendaciones recientes
+        </h2>
+        <p className="text-xs sm:text-sm text-stone-500 mt-0.5">
+          Platos aprobados por foodies reales con el botón &ldquo;¡Confirmo!&rdquo;
+        </p>
+      </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {(recomendaciones as unknown as RecomendacionConRelaciones[]).map((reco) => {
           const plato = reco.platos;
           const restaurante = plato?.restaurantes;
@@ -133,54 +140,58 @@ export async function RecomendacionesRecientes() {
           return (
             <article
               key={reco.id}
-              className="w-full bg-neutral-900/60 border border-neutral-800/60 rounded-2xl overflow-hidden shadow-sm"
+              className="w-full bg-white border border-stone-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
               aria-label={`Recomendación de ${plato?.nombre ?? 'plato'} en ${restaurante?.nombre ?? 'restaurante'}`}
             >
-              {/* Foto del plato */}
-              <div className="relative w-full aspect-video bg-neutral-800">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={fotoUrl}
-                  alt={`Foto de ${plato?.nombre ?? 'plato'} en ${restaurante?.nombre ?? 'restaurante'}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                {/* Badge de calificación */}
-                <div className="absolute top-2 right-2 bg-neutral-950/80 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                  <span className="text-amber-400 text-xs leading-none">
-                    {'★'.repeat(reco.calificacion)}
-                  </span>
-                  <span className="text-neutral-400 text-xs leading-none">
-                    {'★'.repeat(5 - reco.calificacion)}
-                  </span>
+              <div>
+                {/* Foto del plato */}
+                <div className="relative w-full aspect-video bg-stone-100 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={fotoUrl}
+                    alt={`Foto de ${plato?.nombre ?? 'plato'} en ${restaurante?.nombre ?? 'restaurante'}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  {/* Badge de calificación */}
+                  <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1 shadow-sm border border-stone-200/80">
+                    <span className="text-[#EA580C] text-xs leading-none">
+                      {'★'.repeat(reco.calificacion)}
+                    </span>
+                    <span className="text-stone-300 text-xs leading-none">
+                      {'★'.repeat(5 - reco.calificacion)}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Contenido */}
-              <div className="p-3">
-                {/* Plato y restaurante */}
-                <div className="mb-2">
-                  <p className="font-bold text-neutral-100 text-sm leading-tight">
-                    {plato?.nombre ?? '—'}
-                  </p>
-                  {restaurante && (
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      {restaurante.nombre}
-                      <span className="mx-1 text-neutral-600">·</span>
-                      <span className="text-neutral-500">{restaurante.distrito}</span>
+                {/* Contenido */}
+                <div className="p-4">
+                  {/* Plato y restaurante */}
+                  <div className="mb-2.5">
+                    <p className="font-extrabold text-stone-900 text-base leading-snug">
+                      {plato?.nombre ?? '—'}
+                    </p>
+                    {restaurante && (
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        <span className="font-medium text-stone-700">{restaurante.nombre}</span>
+                        <span className="mx-1.5 text-stone-300">·</span>
+                        <span>{restaurante.distrito}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Comentario */}
+                  {reco.comentario && (
+                    <p className="text-xs text-stone-600 leading-relaxed mb-4 line-clamp-3 bg-stone-50/80 p-2.5 rounded-xl border border-stone-100">
+                      &ldquo;{reco.comentario}&rdquo;
                     </p>
                   )}
                 </div>
+              </div>
 
-                {/* Comentario */}
-                {reco.comentario && (
-                  <p className="text-xs text-neutral-300 leading-relaxed mb-3 line-clamp-3">
-                    &ldquo;{reco.comentario}&rdquo;
-                  </p>
-                )}
-
-                {/* Footer: autor + tiempo + botón */}
-                <div className="flex items-center justify-between gap-2">
+              {/* Footer: autor + tiempo + botón */}
+              <div className="p-4 pt-0">
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-stone-100">
                   {/* Autor */}
                   <div className="flex items-center gap-2 min-w-0">
                     {autor?.foto_url ? (
@@ -188,17 +199,17 @@ export async function RecomendacionesRecientes() {
                       <img
                         src={autor.foto_url}
                         alt={displayName}
-                        className="w-7 h-7 rounded-full object-cover border border-neutral-700 flex-shrink-0"
+                        className="w-8 h-8 rounded-full object-cover border border-stone-200 flex-shrink-0"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold border border-neutral-700 flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 text-[#C2410C] flex items-center justify-center text-xs font-bold border border-orange-200 flex-shrink-0">
                         {inicial}
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-neutral-300 truncate">{displayName}</p>
-                      <p className="text-[10px] text-neutral-600">{tiempoRelativo(reco.fecha)}</p>
+                      <p className="text-xs font-bold text-stone-800 truncate">{displayName}</p>
+                      <p className="text-[11px] text-stone-600">{tiempoRelativo(reco.fecha)}</p>
                     </div>
                   </div>
 
@@ -223,25 +234,25 @@ export async function RecomendacionesRecientes() {
 /** Skeleton para <Suspense> mientras carga RecomendacionesRecientes */
 export function RecomendacionesRecientesSkeleton() {
   return (
-    <section className="w-full py-4" aria-hidden="true">
-      <div className="h-5 w-44 bg-neutral-800 rounded-full mb-4 animate-pulse" />
-      <div className="flex flex-col gap-3">
+    <section className="w-full py-6" aria-hidden="true">
+      <div className="h-6 w-52 bg-stone-200 rounded-full mb-6 animate-pulse" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="w-full bg-neutral-900/60 border border-neutral-800/60 rounded-2xl overflow-hidden animate-pulse"
+            className="w-full bg-white border border-stone-200/80 rounded-2xl overflow-hidden animate-pulse shadow-sm"
           >
-            <div className="w-full aspect-video bg-neutral-800" />
-            <div className="p-3 flex flex-col gap-2">
-              <div className="h-4 w-32 bg-neutral-800 rounded-full" />
-              <div className="h-3 w-24 bg-neutral-800/70 rounded-full" />
-              <div className="h-3 w-full bg-neutral-800/50 rounded-full" />
-              <div className="flex items-center justify-between mt-1">
+            <div className="w-full aspect-video bg-stone-100" />
+            <div className="p-4 flex flex-col gap-3">
+              <div className="h-5 w-36 bg-stone-200 rounded" />
+              <div className="h-3.5 w-24 bg-stone-100 rounded" />
+              <div className="h-12 w-full bg-stone-50 rounded-xl" />
+              <div className="flex items-center justify-between pt-3 border-t border-stone-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-neutral-800" />
-                  <div className="h-3 w-20 bg-neutral-800/70 rounded-full" />
+                  <div className="w-8 h-8 rounded-full bg-stone-200" />
+                  <div className="h-3 w-20 bg-stone-100 rounded" />
                 </div>
-                <div className="h-9 w-28 rounded-full bg-neutral-800" />
+                <div className="h-10 w-24 rounded-full bg-stone-200" />
               </div>
             </div>
           </div>

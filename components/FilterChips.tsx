@@ -35,7 +35,7 @@ export function FilterChips({
     <div className="w-full flex flex-col gap-3 py-2">
       {/* Selector de Distrito */}
       <div className="flex flex-col gap-1.5 text-left">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 px-1">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 px-1">
           Distrito
         </span>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -45,10 +45,10 @@ export function FilterChips({
               <button
                 key={d.id}
                 onClick={() => onSelectDistrito(d.id)}
-                className={`min-h-[44px] px-4 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`min-h-[44px] px-4 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-amber-500 text-neutral-950 shadow-md shadow-amber-500/20'
-                    : 'bg-neutral-900 text-neutral-300 border border-neutral-800 hover:border-neutral-700'
+                    ? 'bg-[#EA580C] text-white shadow-sm shadow-orange-600/20'
+                    : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300 shadow-2xs'
                 }`}
               >
                 {d.label}
@@ -60,7 +60,7 @@ export function FilterChips({
 
       {/* Selector de Categoría */}
       <div className="flex flex-col gap-1.5 text-left">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400 px-1">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 px-1">
           Tipo de cocina
         </span>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -70,10 +70,10 @@ export function FilterChips({
               <button
                 key={c.id}
                 onClick={() => onSelectCategoria(c.id)}
-                className={`min-h-[44px] px-3.5 rounded-xl text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`min-h-[44px] px-3.5 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-orange-500 text-neutral-950 shadow-md shadow-orange-500/20'
-                    : 'bg-neutral-900 text-neutral-300 border border-neutral-800 hover:border-neutral-700'
+                    ? 'bg-[#EA580C] text-white shadow-sm shadow-orange-600/20'
+                    : 'bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300 shadow-2xs'
                 }`}
               >
                 <span>{c.icon}</span>

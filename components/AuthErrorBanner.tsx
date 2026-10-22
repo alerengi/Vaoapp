@@ -11,7 +11,7 @@ export function AuthErrorBanner() {
   }
 
   return (
-    <div className="w-full mb-6 p-3 rounded-xl bg-red-950/60 border border-red-800/50 text-red-300 text-xs text-center">
+    <div className="w-full mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs text-center font-medium shadow-2xs">
       ⚠️ Ocurrió un error al autenticarte con Google. Por favor intenta nuevamente.
     </div>
   )
