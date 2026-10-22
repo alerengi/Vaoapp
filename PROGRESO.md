@@ -1,8 +1,8 @@
 # Registro de Progreso · Proyecto Vao
 
 ## 1. Fase y tarea actuales
-* **Fase:** Fase 1 (Base)
-* **Tarea actual:** Tarea 1.4 finalizada (código) · Lista para ejecución manual del seed por el usuario
+* **Fase:** Fase 1 (Base) completada al 100% · Lista para iniciar Fase 2 (Núcleo)
+* **Tarea actual:** Tarea 1.5 finalizada
 * **Fecha de actualización:** 2026-10-21
 
 ---
@@ -32,46 +32,54 @@
 * **11 pruebas automatizadas** de seguridad y autenticación.
 
 ### Tarea 1.4 · Proxy seguro de fotos y script manual de Google Places
-* **Migración 002:** `supabase/migrations/002_agregar_photo_author.sql` para añadir la columna `photo_author` requerida por los términos de servicio de Google Places.
-* **Tipos actualizados:** `Restaurante` y `RestauranteDB` en `lib/types.ts` incorporan `photo_author` y `photo_reference`.
+* **Migración 002:** `supabase/migrations/002_agregar_photo_author.sql` para añadir la columna `photo_author`.
 * **Rate Limiter:** Módulo `lib/rate-limiter.ts` con ventana deslizante en memoria (60 req/min por IP) y limpieza automática.
-* **Route Handler del Proxy:** `app/api/places/photo/route.ts`:
-  * Aplica rate limiting por IP (429 si excede con `Retry-After`).
-  * Valida que `photo_reference` exista en `public.restaurantes` antes de pedirla a Google (403 si es ajena).
-  * Solicita la imagen a Google Places API (New) sin exponer la API key al cliente.
-  * Responde con binario de imagen y cabeceras de caché `public, max-age=86400, s-maxage=604800`.
-* **Script de carga manual:** `scripts/seed-places.ts`:
-  * Configurado para ejecutarse con `npm run seed:places`.
-  * Realiza **exactamente 6 consultas** a Google Places API (New) Text Search (2 distritos × 3 categorías).
-  * FieldMask mínimo: `places.id,places.displayName,places.formattedAddress,places.location,places.priceLevel,places.photos`.
-  * Filtro estricto por distrito: descarta cualquier local que no pertenezca a Miraflores o Barranco.
-  * Extrae `photo_reference` y `photo_author` (authorAttributions) de la primera foto.
-  * Realiza `upsert` idempotente en Supabase por `google_place_id`.
-* **7 nuevas pruebas automatizadas** (`tests/proxy-places.test.ts`) cubriendo rate limiter, validación de referencias, rechazo 403, 400, 429 y streaming de imagen con cabeceras de caché.
-* **Total acumulado: 42 pruebas automatizadas pasando**, 0 vulnerabilidades en producción y build de Next.js 16 verificado en verde.
+* **Route Handler del Proxy:** `app/api/places/photo/route.ts` con validación de referencia en la BD, streaming de imagen y cabeceras de caché.
+* **Script de carga manual:** `scripts/seed-places.ts` con 6 consultas exactas a Places API (New), filtro estricto por distrito y extracción de autor. Carga exitosa ejecutada por el usuario (79 restaurantes únicos guardados en Supabase).
+* **7 pruebas automatizadas** (`tests/proxy-places.test.ts`).
+
+### Tarea 1.5 · Pantalla principal (Home) mobile-first
+* **`RestaurantCard`:** Tarjeta móvil accesible (ancho adaptado a 375 px) con etiqueta `<img>` y `loading="lazy"` para evitar doble procesamiento y dosificar el consumo del proxy; incluye badges de distrito y cocina, rango de precio, atribución obligatoria de autor ("Foto: {autor}") y datos ("Datos de Google Maps"), y botón táctil "¡Vao!" que abre la ruta en Google Maps.
+* **`FilterChips`:** Selector táctil de al menos 44 px para alternar distritos (Todos, Miraflores, Barranco) y categorías (Todas, Makis, Ceviche, Burgers).
+* **`RestaurantExplorer`:** Explorador reactivo con paginación de 20 en 20 locales (evita superar el límite de 60 req/min de imágenes) y estado vacío con sugerencia amigable si la combinación de filtros no tiene locales.
+* **`createPublicClient`:** Cliente ligero en `lib/supabase/server.ts` sin acceso a cookies para consultas públicas, permitiendo a Next.js 16 pre-renderizar estáticamente con Partial Prerendering (PPR).
+* **`RestaurantListSkeleton`:** Skeleton animado de carga integrado en `app/page.tsx` dentro de `<Suspense>` para streaming instantáneo.
+* **9 nuevas pruebas automatizadas** (`tests/home-ui.test.tsx`) que verifican renderizado, lazy loading, atribuciones, botón de Google Maps, paginación de 20 en 20, filtros y estados vacíos.
+* **Total acumulado: 51 pruebas automatizadas pasando**, 0 vulnerabilidades en dependencias de producción y build de Next.js 16 verificado en verde.
 
 ---
 
-## 3. Qué falta (Fase 1 - Base)
+## 3. Estado de Fases
 
-* [x] **Tarea 1.4 · Proxy seguro de fotos y script manual de Google Places** (Código terminado · Pendiente de ejecución manual por el usuario)
-* [ ] **Tarea 1.5 · Pantalla principal (Home) mobile-first:**
-  * Vista principal en 375 px listando restaurantes con fotos, distritos y tipo de cocina.
-  * Estados visuales: cargando (skeletons), vacío amigable y errores.
-  * Prueba de interfaz sin desbordamiento horizontal.
+### Fase 1 · Base (Completada al 100%)
+* [x] Tarea 1.1 · Inicialización del proyecto Next.js + Tailwind + Vitest
+* [x] Tarea 1.2 · Migración completa de base de datos y tipos TypeScript
+* [x] Tarea 1.3 · Autenticación con Google y proxy de sesión
+* [x] Tarea 1.4 · Proxy seguro de fotos y carga inicial de Google Places (79 restaurantes)
+* [x] Tarea 1.5 · Pantalla principal Home mobile-first (375 px, 20 en 20, lazy loading, filtros y botón Vao)
+
+*Criterio de éxito de Fase 1 cumplido:* Un usuario se registra con Google y ve la lista de restaurantes de Miraflores y Barranco.
+
+### Fase 2 · Núcleo (Siguiente fase)
+* [ ] **Tarea 2.1 · Bucket de Supabase Storage para recomendaciones:**
+  * Crear bucket `recomendaciones` con políticas de seguridad RLS en Storage (solo autor puede subir/reemplazar/borrar en su propia subcarpeta `recomendaciones/<usuario_id>/` y bloqueo de path traversal `..`).
+* [ ] **Tarea 2.2 · Búsqueda por plato, restaurante o cocina:**
+  * Barra de búsqueda reactiva (tolerante a tildes y sinónimos) con ordenamiento bayesiano por Puntaje Vao (HU-01).
+* [ ] **Tarea 2.3 · Recomendar un plato con foto (HU-02):**
+  * Formulario completable en <60s, compresión de imagen en cliente (<5 MB) y subida a Supabase Storage.
+* [ ] **Tarea 2.4 · Validar recomendación con "¡Confirmo!" (HU-03):**
+  * Validación optimista reversible, bloqueo de auto-validación y recálculo automático del Puntaje Vao.
 
 ---
 
 ## 4. Pendientes para Fases Posteriores
 
 ### Fase 2 · Storage
-> ⚠️ **Bucket de Supabase Storage** — Crear manualmente el bucket `recomendaciones` con las siguientes políticas de Storage (no es SQL de tabla, se configura en el panel de Supabase o vía API de administración):
->
-> * **INSERT (subir):** solo usuarios autenticados pueden subir archivos, y únicamente a la ruta `recomendaciones/<su_id>/`. La ruta no puede contener `..` (traversal de directorios).
+> ⚠️ **Bucket de Supabase Storage** — Configurar el bucket `recomendaciones`:
+> * **INSERT (subir):** solo usuarios autenticados pueden subir archivos a `recomendaciones/<su_id>/`. Prohibido `..`.
 > * **UPDATE (reemplazar):** un usuario solo puede reemplazar archivos dentro de `recomendaciones/<su_id>/`. Prohibido `..`.
 > * **DELETE (borrar):** un usuario solo puede borrar archivos dentro de `recomendaciones/<su_id>/`. Prohibido `..`.
-> * **SELECT (leer/descargar):** lectura pública para todos (las fotos son visibles en la app).
-> * Estas políticas deben crearse como Storage Policies en el panel de Supabase → Storage → Policies, o mediante el cliente `@supabase/supabase-js` con `storageFrom().createPolicy()`.
+> * **SELECT (leer/descargar):** lectura pública para todos.
 
 ### Fase 4 · Despliegue en Vercel
 > ⚠️ **Supabase Auth URL Configuration:**
@@ -96,14 +104,19 @@
    La función `getSafeRedirectPath` en `lib/auth-utils.ts` valida cualquier redirección posterior al login, garantizando que el usuario solo pueda ser redirigido a rutas internas del dominio (`/`, `/explorar`, etc.) y rechazando URLs absolutas (`https://...`), esquemas relativos (`//...`) y backslashes.
 
 4. **Places API (New) y Modelo de Precios por SKU:**
-   Google Maps Platform utiliza cupos gratuitos mensuales por SKU (ya no el crédito genérico de $200 USD). El field mask utilizado activa el SKU **Places - Text Search (Pro)** que otorga 1,000 llamadas mensuales gratuitas. Al realizar solo 6 consultas, el costo facturado es exactamente **$0.00 USD**.
+   Google Maps Platform utiliza cupos gratuitos mensuales por SKU. El field mask utilizado activa el SKU **Places - Text Search (Pro)** que otorga 1,000 llamadas mensuales gratuitas. Al realizar solo 6 consultas, el costo facturado fue **$0.00 USD**.
 
-5. **Atribución de fotos de Google Places:**
-   Se incluye la columna `photo_author` en `restaurantes` para guardar `authorAttributions[0].displayName`, cumpliendo con la política de uso de Google que exige mostrar el crédito del fotógrafo.
+5. **Atribución de fotos de Google Places y Datos:**
+   Se incluye la columna `photo_author` en `restaurantes` para guardar `authorAttributions[0].displayName`, y en cada tarjeta se exhibe "Datos de Google Maps" junto a "Foto: {autor}".
+
+6. **Paginación móvil (20 en 20) y `loading="lazy"`:**
+   Para no saturar el rate limit del proxy (60 req/min por IP) ni consumir ancho de banda innecesario en celulares, se renderizan 20 locales inicialmente con botón "Ver más", y las fotos se cargan de forma diferida con `loading="lazy"`.
+
+7. **Separación de cliente público y autenticado en servidor:**
+   Se implementó `createPublicClient()` en `lib/supabase/server.ts` para consultas públicas (catálogo de restaurantes) sin tocar cookies, evitando que Next.js cancele el pre-renderizado estático de la página principal.
 
 ---
 
 ## 6. Siguiente paso
-* El usuario ejecuta en Supabase la migración 002 (`002_agregar_photo_author.sql`).
-* El usuario ejecuta manualmente `npm run seed:places`.
-* Una vez cargados los restaurantes, iniciamos la **Tarea 1.5** (Pantalla principal Home mobile-first en 375 px).
+* Probar la interfaz mobile-first en celular o con la herramienta de emulación móvil del navegador en 375 px de ancho.
+* Dar inicio a la **Fase 2 (Núcleo)** con la **Tarea 2.1**: configuración del bucket de Storage con políticas de seguridad.
